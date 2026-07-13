@@ -1,0 +1,25 @@
+#global-controls {
+  margin-top: 8px;
+  padding: 8px 14px;
+  background: #111128;
+  border: 1px solid #335;
+  border-radius: 6px;
+}
+
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #8af;
+}
+.slider-group input { width: 100px; accent-color: #8af; }
+.slider-group .val { color: #fff; min-width: 40px; }
+
+.fallen-cube {
+  position: fixed;
+  width: 14px;
+  height: 14px;
+  z-index: 1000;
+  pointer-events: none;
+}

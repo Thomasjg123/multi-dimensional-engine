@@ -1,45 +1,3 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: #0a0a1a;
-  color: #fff;
-  font-family: monospace;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-}
-h1 { margin-bottom: 12px; font-size: 1.2rem; color: #8af; }
-
-#toolbar, #global-controls {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 10px;
-  align-items: center;
-}
-button {
-  background: #223;
-  color: #8af;
-  border: 1px solid #446;
-  padding: 6px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: monospace;
-  font-size: 0.8rem;
-}
-button:hover { background: #334; }
-button.danger { color: #f88; border-color: #844; }
-button.danger:hover { background: #443; }
-
-#global-controls {
-  margin-top: 8px;
-  padding: 8px 14px;
-  background: #111128;
-  border: 1px solid #335;
-  border-radius: 6px;
-}
-
 /* space card */
 .space-card {
   background: #111128;
@@ -122,21 +80,3 @@ button.danger:hover { background: #443; }
   margin-top: 4px;
 }
 .cube-info span { color: #fff; }
-
-.slider-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  color: #8af;
-}
-.slider-group input { width: 100px; accent-color: #8af; }
-.slider-group .val { color: #fff; min-width: 40px; }
-
-.fallen-cube {
-  position: fixed;
-  width: 14px;
-  height: 14px;
-  z-index: 1000;
-  pointer-events: none;
-}

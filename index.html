@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1D Multi-Space Simulator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>▣ Multi-Space 1D Simulator</h1>
+
+<div id="toolbar">
+  <button id="btn-add-space">+ Add Space</button>
+  <button id="btn-stop-all">● Stop</button>
+  <button id="btn-reset-all">↺ Reset All</button>
+</div>
+
+<div id="spaces-container"></div>
+
+<div id="global-controls">
+  <div class="slider-group">
+    global gravity: <input type="range" id="gravity" min="-5" max="5" step="0.1" value="0">
+    <span class="val" id="gravity-val">0.0</span>
+  </div>
+  <div class="slider-group">
+    global drag: <input type="range" id="drag" min="0" max="0.2" step="0.005" value="0.02">
+    <span class="val" id="drag-val">0.02</span>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

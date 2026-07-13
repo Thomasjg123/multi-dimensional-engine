@@ -1,0 +1,6 @@
+--Space connected by bonds
+--squares cells. space filled
+-- space cells try to make no spaces to form one mass.
+--what happens when you have a split and put 2d spaces on different levels?
+-- Is it really a 3d space ?
+-- what keeps 2d on a certain level? do they fall down? 

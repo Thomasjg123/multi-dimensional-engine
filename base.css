@@ -31,3 +31,5 @@ button {
 button:hover { background: #334; }
 button.danger { color: #f88; border-color: #844; }
 button.danger:hover { background: #443; }
+button.recording { color: #f44; border-color: #f44; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }

@@ -47,19 +47,27 @@ function addSpaceCard(space) {
   space.ctx = canvas.getContext('2d');
   space.card = card;
 
-  canvas.addEventListener('click', e => {
-    if (!chain.alive) return;
+  canvas.addEventListener('contextmenu', e => {
+    e.preventDefault();
     const rect = canvas.getBoundingClientRect();
     const scaleX = CANVAS_W / rect.width;
     const px = (e.clientX - rect.left) * scaleX;
     const worldPos = Math.max(0, Math.min(MAX_X, px / PIXELS_PER_UNIT));
-    chain.spaceId = space.id;
+    spawnBlock(space.id, worldPos);
     activeSpaceId = space.id;
-    chain.headPos = worldPos;
-    chain.headVel = 0;
-    for (let i = 0; i < chain.segments.length; i++) {
-      chain.segments[i] = worldPos - i * chain.headDir * CHAIN_LINK_DIST;
-      chain.segmentVels[i] = 0;
+  });
+
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = CANVAS_W / rect.width;
+    const px = (e.clientX - rect.left) * scaleX;
+    const worldPos = Math.max(0, Math.min(MAX_X, px / PIXELS_PER_UNIT));
+    const b = getBlock(selectedBlockId);
+    if (b && b.alive) {
+      b.spaceId = space.id;
+      activeSpaceId = space.id;
+      b.pos = worldPos;
+      b.vel = 0;
     }
   });
 
@@ -77,7 +85,9 @@ function addSpaceCard(space) {
 
       if (pendingConnection === null) {
         if (conn && conn !== key) {
-          dieBySmashed(key);
+          for (const b of getAliveBlocks()) {
+            dieBySmashed(b, key);
+          }
           disconnectEndpoint(key);
           updateAllConnLabels();
         } else {

@@ -1,59 +1,59 @@
-function resetChain() {
-  chain.headPos = MAX_X / 2;
-  chain.headVel = 0;
-  chain.headDir = 1;
-  chain.segments = [];
-  chain.segmentVels = [];
-  for (let i = 0; i < SEGMENT_COUNT; i++) {
-    chain.segments.push(chain.headPos - i * chain.headDir * CHAIN_LINK_DIST);
-    chain.segmentVels.push(0);
-  }
-  chain.alive = true;
-  if (spaces.length > 0) {
-    chain.spaceId = spaces[0].id;
-    activeSpaceId = spaces[0].id;
-  }
+function spawnBlock(spaceId, pos) {
+  const b = {
+    id: nextBlockId++,
+    spaceId,
+    pos: pos ?? MAX_X / 2,
+    vel: 0,
+    dir: 1,
+    alive: true,
+  };
+  blocks.push(b);
+  selectedBlockId = b.id;
+  return b;
 }
 
-function handleBoundary(conn, side) {
-  const sid = chain.spaceId;
+function getBlock(id) {
+  return blocks.find(b => b.id === id);
+}
+
+function getAliveBlocks() {
+  return blocks.filter(b => b.alive);
+}
+
+const BOUNDARY_MARGIN = BLOCK_COLLISION_DIST / 2;
+
+function handleBoundary(b, conn, side) {
+  const sid = b.spaceId;
 
   if (conn === null) {
-    dieByFalling(side);
+    dieByFalling(b, side);
     return;
   }
 
   if (conn === epKey(sid, side)) {
-    chain.headPos = Math.max(0, Math.min(MAX_X, chain.headPos));
-    chain.headVel = 0;
+    b.pos = Math.max(BOUNDARY_MARGIN, Math.min(MAX_X - BOUNDARY_MARGIN, b.pos));
+    b.vel = 0;
     return;
   }
 
   const target = parseEpKey(conn);
   const spaceExists = spaces.some(s => s.id === target.spaceId);
   if (!spaceExists) {
-    chain.headPos = Math.max(0, Math.min(MAX_X, chain.headPos));
-    chain.headVel = 0;
+    b.pos = Math.max(BOUNDARY_MARGIN, Math.min(MAX_X - BOUNDARY_MARGIN, b.pos));
+    b.vel = 0;
     return;
   }
 
-  // move entire chain to new space
-  chain.spaceId = target.spaceId;
-  activeSpaceId = target.spaceId;
+  b.spaceId = target.spaceId;
 
-  const entryPos = target.side === 'left' ? 0 : MAX_X;
-  const delta = entryPos - chain.headPos;
-  chain.headPos = entryPos;
-  for (let i = 0; i < chain.segments.length; i++) {
-    chain.segments[i] += delta;
-    chain.segmentVels[i] = 0;
-  }
+  const entryPos = target.side === 'left' ? BOUNDARY_MARGIN : MAX_X - BOUNDARY_MARGIN;
+  b.pos = entryPos;
 
   if (target.side === 'left') {
-    chain.headVel = Math.abs(chain.headVel);
-    chain.headDir = 1;
+    b.vel = Math.abs(b.vel);
+    b.dir = 1;
   } else {
-    chain.headVel = -Math.abs(chain.headVel);
-    chain.headDir = -1;
+    b.vel = -Math.abs(b.vel);
+    b.dir = -1;
   }
 }

@@ -1,63 +1,121 @@
-function updateChain(dt) {
-  if (!chain.alive) return;
+function logDebug(msg) {
+  if (!debugRecording) return;
+  console.log(`[F${debugFrame}] ${msg}`);
+}
 
-  let acc = globalGravity - globalDrag * chain.headVel;
-  if (heldKeys.forward) acc += 3 * chain.headDir;
-
-  chain.headVel += acc * dt;
-  if (chain.headDir > 0) {
-    chain.headVel = Math.max(0, chain.headVel);
-  } else {
-    chain.headVel = Math.min(0, chain.headVel);
-  }
-  chain.headPos += chain.headVel * dt;
-  chain.segments[0] = chain.headPos;
-
-  // body segments: spring + min/max/break
-  for (let i = 1; i < chain.segments.length; i++) {
-    const prev = chain.segments[i - 1];
-    const curr = chain.segments[i];
-    const offset = curr - prev;
-    const dist = Math.abs(offset);
-    const sign = offset >= 0 ? 1 : -1;
-
-    // spring toward natural link distance behind previous segment
-    const targetDist = CHAIN_LINK_DIST;
-    const springForce = -CHAIN_SPRING_K * (dist - targetDist);
-    const dampForce = -CHAIN_DAMP * chain.segmentVels[i] * sign;
-    chain.segmentVels[i] += (springForce + dampForce) * dt;
-    chain.segments[i] += chain.segmentVels[i] * dt;
-
-    // enforce min/max
-    const newOffset = chain.segments[i] - prev;
-    const newDist = Math.abs(newOffset);
-    const newSign = newOffset >= 0 ? 1 : -1;
-
-    if (newDist > CHAIN_MAX_DIST) {
-      chain.segments[i] = prev + newSign * CHAIN_MAX_DIST;
-      chain.segmentVels[i] = 0;
-    } else if (newDist < CHAIN_MIN_DIST) {
-      chain.segments[i] = prev + newSign * CHAIN_MIN_DIST;
-      chain.segmentVels[i] = 0;
-    }
-
-    // break check
-    if (Math.abs(chain.segments[i] - prev) > CHAIN_BREAK_DIST) {
-      dieByFalling(chain.headDir > 0 ? 'right' : 'left');
-      return;
-    }
+function resolveCollisions(dt) {
+  const groups = {};
+  for (const b of blocks) {
+    if (!b.alive) continue;
+    (groups[b.spaceId] || (groups[b.spaceId] = [])).push(b);
   }
 
-  // head boundary check
-  const sid = chain.spaceId;
-  const space = spaces.find(s => s.id === sid);
-  if (!space) { chain.headVel = 0; return; }
+  for (const sid in groups) {
+    const group = groups[sid];
+    if (group.length < 2) continue;
+    group.sort((a, b) => a.pos - b.pos);
 
-  if (chain.headPos < 0) {
-    const conn = getConnection(epKey(sid, 'left'));
-    handleBoundary(conn, 'left');
-  } else if (chain.headPos > MAX_X) {
-    const conn = getConnection(epKey(sid, 'right'));
-    handleBoundary(conn, 'right');
+    for (let i = 0; i < group.length - 1; i++) {
+      const a = group[i];
+      const b = group[i + 1];
+      const gap = b.pos - a.pos;
+      const overlap = BLOCK_COLLISION_DIST - gap;
+      if (overlap <= 0) continue;
+
+      const force = overlap * REPULSION_STIFFNESS;
+      a.vel -= force * dt;
+      b.vel += force * dt;
+
+      const shift = overlap * POSITION_CORRECTION / 2;
+      a.pos -= shift;
+      b.pos += shift;
+    }
+
+    for (const b of group) {
+      if (b.pos < BLOCK_COLLISION_DIST) {
+        const conn = getConnection(epKey(sid, 'left'));
+        if (conn && conn !== epKey(sid, 'left')) {
+          const target = parseEpKey(conn);
+          const tg = groups[target.spaceId];
+          if (tg) {
+            for (const o of tg) {
+              const eff = b.pos + (MAX_X - o.pos);
+              const ov = BLOCK_COLLISION_DIST - eff;
+              if (ov <= 0) continue;
+              const f = ov * REPULSION_STIFFNESS;
+              b.vel += f * dt;
+              o.vel -= f * dt;
+              const s = ov * POSITION_CORRECTION / 2;
+              b.pos += s;
+              o.pos -= s;
+            }
+          }
+        }
+      }
+      if (b.pos > MAX_X - BLOCK_COLLISION_DIST) {
+        const conn = getConnection(epKey(sid, 'right'));
+        if (conn && conn !== epKey(sid, 'right')) {
+          const target = parseEpKey(conn);
+          const tg = groups[target.spaceId];
+          if (tg) {
+            for (const o of tg) {
+              const eff = (MAX_X - b.pos) + o.pos;
+              const ov = BLOCK_COLLISION_DIST - eff;
+              if (ov <= 0) continue;
+              const f = ov * REPULSION_STIFFNESS;
+              b.vel -= f * dt;
+              o.vel += f * dt;
+              const s = ov * POSITION_CORRECTION / 2;
+              b.pos -= s;
+              o.pos += s;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function updateBlocks(dt) {
+  for (const b of blocks) {
+    if (!b.alive) continue;
+
+    const prevPos = b.pos;
+    const prevSpace = b.spaceId;
+
+    let acc = globalGravity - globalDrag * b.vel;
+    if (heldKeys.forward) acc += 3 * b.dir;
+
+    b.vel += acc * dt;
+    if (b.dir > 0) {
+      b.vel = Math.max(0, b.vel);
+    } else {
+      b.vel = Math.min(0, b.vel);
+    }
+    b.pos += b.vel * dt;
+
+    const sid = b.spaceId;
+    const space = spaces.find(s => s.id === sid);
+    if (!space) { b.vel = 0; continue; }
+
+    if (b.pos < 0) {
+      const conn = getConnection(epKey(sid, 'left'));
+      logDebug(`BOUNDARY [${b.id}] space=${sid} pos=${b.pos.toFixed(3)} vel=${b.vel.toFixed(3)} -> left  conn=${conn}`);
+      handleBoundary(b, conn, 'left');
+      if (b.spaceId !== prevSpace) logDebug(`  TELEPORT [${b.id}] space ${prevSpace} -> ${b.spaceId}  pos=${b.pos.toFixed(3)} vel=${b.vel.toFixed(3)} dir=${b.dir}`);
+    } else if (b.pos > MAX_X) {
+      const conn = getConnection(epKey(sid, 'right'));
+      logDebug(`BOUNDARY [${b.id}] space=${sid} pos=${b.pos.toFixed(3)} vel=${b.vel.toFixed(3)} -> right  conn=${conn}`);
+      handleBoundary(b, conn, 'right');
+      if (b.spaceId !== prevSpace) logDebug(`  TELEPORT [${b.id}] space ${prevSpace} -> ${b.spaceId}  pos=${b.pos.toFixed(3)} vel=${b.vel.toFixed(3)} dir=${b.dir}`);
+    }
+  }
+
+  resolveCollisions(dt);
+
+  if (debugRecording) {
+    const snapshot = blocks.filter(b => b.alive).map(b => `[${b.id}] s=${b.spaceId} p=${b.pos.toFixed(2)} v=${b.vel.toFixed(2)}`).join('  ');
+    logDebug(`STATE ${snapshot || '(none)'}`);
+    debugFrame++;
   }
 }

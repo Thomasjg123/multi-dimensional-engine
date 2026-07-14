@@ -3,21 +3,21 @@ function removeSpace(id) {
   if (!space) return;
   space.removed = true;
 
-  if (chain.spaceId === id) {
-    const remaining = spaces.filter(s => s.id !== id);
-    if (remaining.length > 0) {
-      chain.spaceId = remaining[0].id;
-      activeSpaceId = remaining[0].id;
-    } else {
-      chain.spaceId = null;
-      activeSpaceId = null;
-    }
-    chain.headPos = MAX_X / 2; chain.headVel = 0;
-    for (let i = 0; i < chain.segments.length; i++) {
-      chain.segments[i] = chain.headPos - i * chain.headDir * CHAIN_LINK_DIST;
-      chain.segmentVels[i] = 0;
+  for (const b of blocks) {
+    if (b.spaceId === id && b.alive) {
+      const remaining = spaces.filter(s => s.id !== id);
+      if (remaining.length > 0) {
+        b.spaceId = remaining[0].id;
+        activeSpaceId = remaining[0].id;
+      } else {
+        b.spaceId = null;
+        activeSpaceId = null;
+      }
+      b.pos = MAX_X / 2;
+      b.vel = 0;
     }
   }
+
   if (activeSpaceId === id) {
     const remaining = spaces.filter(s => s.id !== id);
     activeSpaceId = remaining.length > 0 ? remaining[0].id : null;

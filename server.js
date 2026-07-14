@@ -15,16 +15,22 @@ const MIME = {
 
 const server = http.createServer((req, res) => {
   let filePath = '.' + (req.url === '/' ? '/index.html' : req.url);
-  const ext = path.extname(filePath);
 
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
+  function tryFile(fp, fallback) {
+    fs.readFile(fp, (err, data) => {
+      if (err) return fallback();
+      const ext = path.extname(fp);
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+      res.end(data);
+    });
+  }
+
+  tryFile(filePath, () => {
+    const indexPath = filePath.replace(/\/$/, '') + '/index.html';
+    tryFile(indexPath, () => {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('404 Not Found');
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
-    res.end(data);
+    });
   });
 });
 
